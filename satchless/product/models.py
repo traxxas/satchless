@@ -21,13 +21,16 @@ class DescribedModel(models.Model):
 
 
 class Category(MPTTModel, DescribedModel):
+    label = models.CharField(_('label'), max_length=16, blank=True, null=True)
     slug = models.SlugField(max_length=50)
     parent = models.ForeignKey('self', null=True, blank=True,
                                related_name='children')
+    order = models.PositiveSmallIntegerField()
 
     class Meta:
         verbose_name = _("category")
         verbose_name_plural = _("categories")
+        ordering = ('order',)
 
     def _parents_slug_path(self):
         parents = '/'.join(c.slug for c in self.get_ancestors())
