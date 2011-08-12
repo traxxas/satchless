@@ -18,7 +18,7 @@ class ProductPrice(models.Model):
                                             "'per product' mode, total "
                                             "quantity of all product's "
                                             "variants will be used."))
-    price = models.DecimalField(_("base price"), max_digits=12, decimal_places=4)
+    price = models.DecimalField(_("base price"), max_digits=12, decimal_places=2)
 
     def __unicode__(self):
         return unicode(self.product)
@@ -30,7 +30,7 @@ class PriceQtyOverride(models.Model):
     """
     base_price = models.ForeignKey(ProductPrice, related_name='qty_overrides')
     min_qty = models.DecimalField(_("minimal quantity"), max_digits=10, decimal_places=4)
-    price = models.DecimalField(_("unit price"), max_digits=12, decimal_places=4)
+    price = models.DecimalField(_("unit price"), max_digits=12, decimal_places=2)
 
     class Meta:
         ordering = ('min_qty',)
@@ -42,7 +42,7 @@ class VariantPriceOffset(models.Model):
     """
     base_price = models.ForeignKey(ProductPrice, related_name='offsets')
     variant = models.OneToOneField(Variant)
-    price_offset = models.DecimalField(_("unit price offset"), max_digits=12, decimal_places=4)
+    price_offset = models.DecimalField(_("unit price offset"), max_digits=12, decimal_places=2)
 
     def clean(self):
         if (self.variant.get_subtype_instance().product !=
