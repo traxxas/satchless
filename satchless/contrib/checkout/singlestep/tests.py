@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.conf import settings
+from django.conf.urls.defaults import patterns, include, url
 from django.core.urlresolvers import reverse
 from django.test import TestCase, Client
 
@@ -15,6 +16,10 @@ from ....product.tests import DeadParrot
 from ..common.views import prepare_order, confirmation
 from . import views
 
+urlpatterns = patterns('',
+    url(r'^cart/', include('satchless.cart.urls')),
+    url(r'^checkout/', include('satchless.contrib.checkout.singlestep.urls')),
+)
 
 class TestPaymentProviderWithConfirmation(TestPaymentProvider):
     def confirm(self, order):
@@ -22,6 +27,8 @@ class TestPaymentProviderWithConfirmation(TestPaymentProvider):
 
 
 class CheckoutTest(TestCase):
+    urls = 'satchless.contrib.checkout.singlestep.tests'
+
     def _setup_settings(self, custom_settings):
         original_settings = {}
         for setting_name, value in custom_settings.items():
@@ -96,7 +103,14 @@ class CheckoutTest(TestCase):
                                      client_instance=self.anon_client,
                                      data={'email': 'foo@example.com'})
         dg = response.context['delivery_group_forms']
-        data = {}
+        data = {'billing_first_name': 'First',
+                'billing_last_name': 'Last',
+                'billing_street_address_1': 'Via Rodeo 1',
+                'billing_city': 'Beverly Hills',
+                'billing_country': 'US',
+                'billing_country_area': 'AZ',
+                'billing_phone': '555-555-5555',
+                'billing_postal_code': '90210'}
         for g, typ, form in dg:
             data[form.add_prefix('email')] = 'foo@example.com'
 
@@ -124,14 +138,21 @@ class CheckoutTest(TestCase):
         self._test_status(reverse(confirmation, kwargs={'order_token':
                                                         order.token}),
                           client_instance=self.anon_client, status_code=302)
-        # finish chcekout view
+        # finish checkout view
         response = self._test_status(reverse(views.checkout,
                                              kwargs={'order_token':
                                                      order.token}),
                                      client_instance=self.anon_client,
                                      data={'email': 'foo@example.com'})
         dg = response.context['delivery_group_forms']
-        data = {}
+        data = {'billing_first_name': 'First',
+                'billing_last_name': 'Last',
+                'billing_street_address_1': 'Via Rodeo 1',
+                'billing_city': 'Beverly Hills',
+                'billing_country': 'US',
+                'billing_country_area': 'AZ',
+                'billing_phone': '555-555-5555',
+                'billing_postal_code': '90210'}
         for g, typ, form in dg:
             data[form.add_prefix('email')] = 'foo@example.com'
 

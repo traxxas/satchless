@@ -2,6 +2,7 @@
 from decimal import Decimal
 from django.http import HttpResponse, HttpRequest
 from django.conf import settings
+from django.conf.urls.defaults import patterns, include, url
 from django.core.urlresolvers import reverse
 from django.test import TestCase, Client
 
@@ -11,13 +12,17 @@ from ....order import handler as order_handler
 from ....order.models import Order
 from ....payment import ConfirmationFormNeeded
 from ....payment.tests import TestPaymentProvider
-from ....product.models import Category
 from ....product.tests import DeadParrot
 
 from ..common.decorators import require_order
 from ..common.views import prepare_order, reactivate_order
 from . import views
 
+urlpatterns = patterns('',
+    url(r'^cart/', include('satchless.cart.urls')),
+    url(r'^checkout/', include('satchless.contrib.checkout.multistep.urls')),
+    url(r'^order/', include('satchless.order.urls')),
+)
 
 class TestPaymentProviderWithConfirmation(TestPaymentProvider):
     def confirm(self, order):
@@ -25,6 +30,8 @@ class TestPaymentProviderWithConfirmation(TestPaymentProvider):
 
 
 class CheckoutTest(TestCase):
+    urls = 'satchless.contrib.checkout.multistep.tests'
+
     def _setup_settings(self, custom_settings):
         original_settings = {}
         for setting_name, value in custom_settings.items():
@@ -42,13 +49,10 @@ class CheckoutTest(TestCase):
                 delattr(settings, setting_name)
 
     def setUp(self):
-        category = Category.objects.create(name='parrot')
         self.macaw = DeadParrot.objects.create(slug='macaw',
                 species="Hyacinth Macaw")
-        self.macaw.categories.add(category)
         self.cockatoo = DeadParrot.objects.create(slug='cockatoo',
                 species="White Cockatoo")
-        self.cockatoo.categories.add(category)
         self.macaw_blue = self.macaw.variants.create(color='blue', looks_alive=False)
         self.macaw_blue_fake = self.macaw.variants.create(color='blue', looks_alive=True)
         self.cockatoo_white_a = self.cockatoo.variants.create(color='white', looks_alive=True)
@@ -196,20 +200,29 @@ class CheckoutTest(TestCase):
 
     def test_checkout_view(self):
         order = self._create_order(self.anon_client)
-        self._test_status(reverse(views.checkout,
-                                  kwargs={'order_token': order.token}),
-                          client_instance=self.anon_client,
-                          status_code=200)
+        response = self._test_status(reverse(views.checkout,
+                                             kwargs={'order_token':
+                                                     order.token}),
+                                     client_instance=self.anon_client,
+                                     status_code=200)
         group = order.groups.get()
         dtypes = order_handler.get_delivery_types(group)
         dtype = dtypes[0][0]
-        data = {
-            u'form-0-delivery_type': dtype,
-            u'form-MAX_NUM_FORMS': [u''],
-            u'form-TOTAL_FORMS': [u'1'],
-            u'form-0-id': [u'1'],
-            u'form-INITIAL_FORMS': [u'1'],
-        }
+        df = response.context['delivery_formset']
+        data = {'billing_first_name': 'First',
+                'billing_last_name': 'Last',
+                'billing_street_address_1': 'Via Rodeo 1',
+                'billing_city': 'Beverly Hills',
+                'billing_country': 'US',
+                'billing_country_area': 'AZ',
+                'billing_phone': '555-555-5555',
+                'billing_postal_code': '90210'}
+        data[df.add_prefix('INITIAL_FORMS')] = '1'
+        data[df.add_prefix('MAX_NUM_FORMS')] = ''
+        data[df.add_prefix('TOTAL_FORMS')] = '1'
+        for form in df.forms:
+            data[form.add_prefix('delivery_type')] = dtype
+            data[form.add_prefix('id')] = group.id
         self._test_status(reverse(views.checkout, kwargs={'order_token':
                                                           order.token}),
                           data=data, status_code=302,
