@@ -51,10 +51,13 @@ class Category(MPTTModel):
                                       null=True)
     objects = CategoryManager()
 
+    class MPTTMeta:
+        order_insertion_by = ('order',)
+
     class Meta:
         verbose_name = _("category")
         verbose_name_plural = _("categories")
-        ordering = ('order',)
+        #ordering = ('order',)
 
     def __unicode__(self):
         return self.name
