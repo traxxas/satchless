@@ -48,7 +48,7 @@ class ProductAdmin(admin.ModelAdmin):
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = models.Category
-        fields = ('name', 'slug', 'parent', 'description', 'meta_description', 'products',)
+        fields = ('name', 'slug', 'label', 'parent', 'description', 'meta_description', 'products',)
 
     parent = fields.CategoryChoiceField(queryset=models.Category.objects.order_by('tree_id', 'lft'),
                                         required=False)
