@@ -16,7 +16,7 @@ class AddToCartForm(forms.Form, QuantityForm):
     """Form that adds a Variant quantity to a Cart.
     It may be replaced by more advanced one, performing some checks, e.g.
     verifying the number of items in stock."""
-    quantity = forms.DecimalField(_('Quantity'), initial=1)
+    quantity = forms.DecimalField(_('Quantity'), initial=1, widget=forms.HiddenInput())
     typ = forms.CharField(max_length=100, widget=forms.HiddenInput())
 
     def __init__(self, data=None, *args, **kwargs):
@@ -63,5 +63,7 @@ def add_to_cart_variant_form_for_product(product,
                                          addtocart_formclass=AddToCartForm):
     variant_formclass = variant_form_for_product(product)
     class AddVariantToCartForm(addtocart_formclass, variant_formclass):
-        pass
+        def __init__(self, *args, **kwargs):
+            super(AddVariantToCartForm, self).__init__(*args, **kwargs)
+        #pass
     return AddVariantToCartForm
