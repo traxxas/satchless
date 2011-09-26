@@ -48,7 +48,7 @@ class Category(MPTTModel):
                                related_name='children')
     order = models.PositiveSmallIntegerField()
     products = models.ManyToManyField(Product, related_name='categories',
-                                      null=True)
+                                      blank=True)
     objects = CategoryManager()
 
     class MPTTMeta:
